@@ -1,0 +1,2 @@
+//include ':app', ':upgrade', ':commonlib'
+include ':app', ':libzxing'
