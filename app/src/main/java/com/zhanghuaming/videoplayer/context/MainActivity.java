@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private List<File> videoList = null;//本地视频列表
     private int playingIndex = 0;//当前播放索引
     private Subscription TimerSubscribe;
-    private ImageView ivErweima;
+  //  private ImageView ivErweima;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,14 +63,14 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        ivErweima = (ImageView) findViewById(R.id.iv_erweima);
-        showErweima("hello");
-        TimerSubscribe = Observable.interval(0, 60000 * 3, TimeUnit.MILLISECONDS)//延时 ，每间隔，时间单位
+     //   ivErweima = (ImageView) findViewById(R.id.iv_erweima);
+     //   showErweima("hello");
+        TimerSubscribe = Observable.interval(0, 60000 * 10, TimeUnit.MILLISECONDS)//延时 ，每间隔，时间单位
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Long>() {
                     @Override
                     public void call(Long aLong) {
-                        if(RetrofixHelper.isNetworkConnected(MainActivity.this)){
+                        if (RetrofixHelper.isNetworkConnected(MainActivity.this)) {
                             refreshFile();
                         }
                     }
@@ -78,87 +78,80 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void showErweima(String url) {
-
-        if (url.equals("")) {
-            Toast.makeText(this, "无法生成空的二维码", Toast.LENGTH_SHORT).show();
-            SLog.e(TAG,"无法生成空的二维码");
-        } else {
-            Bitmap bitmap = EncodingUtils.createQRCode(url, 500, 500, BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
-            ivErweima.setImageBitmap(bitmap);
-        }
-
-    }
+//    public void showErweima(String url) {
+//
+//        if (url.equals("")) {
+//            Toast.makeText(this, "无法生成空的二维码", Toast.LENGTH_SHORT).show();
+//            SLog.e(TAG, "无法生成空的二维码");
+//        } else {
+//            Bitmap bitmap = EncodingUtils.createQRCode(url, 500, 500, BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
+//            ivErweima.setImageBitmap(bitmap);
+//        }
+//
+//    }
 
     void refreshFile() {
         Observable<List<VideoURLBean>> back = RetrofixHelper.getVideoURL();
-        back.flatMap(new Func1<List<VideoURLBean>, Observable<DownloadInfo>>() {
+        back.flatMap(new Func1<List<VideoURLBean>, Observable<String>>() {
             @Override
-            public Observable<DownloadInfo> call(List<VideoURLBean> videoURLBeenList) {
-
+            public Observable<String> call(List<VideoURLBean> videoURLBeenList) {
                 if (videoURLBeenList != null && videoURLBeenList.size() > 0) {
                     List<String> local;
                     List<String> remote;
                     local = getLocalFileName();
                     remote = new ArrayList<>();
                     for (int i = 0; i < videoURLBeenList.size(); i++) {
-                        SLog.i(TAG, "网络视频文件有" + videoURLBeenList.get(i).name+"--"+videoURLBeenList.get(i).md5);
+                        SLog.i(TAG, "网络视频文件有" + videoURLBeenList.get(i).name + "--" + videoURLBeenList.get(i).md5);
                         remote.add(videoURLBeenList.get(i).name);
                     }
-                    compare(remote, local);
-                    if (needDownload != null && needDownload.size() > 0) {
-                        SLog.i(TAG, "本次下载" + needDownload.get(0));
-                        return RetrofixHelper.downloadVideo(needDownload.get(0));
-                    }
+                    final List<String> needDownload = compare(remote, local);
+                    return Observable.create(new Observable.OnSubscribe<String>() {
+                        @Override
+                        public void call(Subscriber<? super String> subscriber) {
+                            for(String n:needDownload) {
+                                subscriber.onNext(n);
+                            }
+                        }
+                    });
                 }
-
-                return Observable.create(new Observable.OnSubscribe<DownloadInfo>() {
+                return Observable.create(new Observable.OnSubscribe<String>() {
                     @Override
-                    public void call(Subscriber<? super DownloadInfo> subscriber) {
+                    public void call(Subscriber<? super String> subscriber) {
                         subscriber.onCompleted();
                     }
                 });
+            }
+        }).flatMap(new Func1<String, Observable<DownloadInfo>>() {
+            @Override
+            public Observable<DownloadInfo> call(final String url) {
+                SLog.i(TAG,"开始下载"+url+"文件");
+                return RetrofixHelper.downloadVideo(url);
             }
         }).subscribeOn(Schedulers.io()).subscribe(new Subscriber<DownloadInfo>() {
             @Override
             public void onCompleted() {
                 SLog.i(TAG, "更新任务完成");
-                boolean delState;
-                for (String p : needDel) {
-                    File f = new File(p);
-                    delState = f.delete();
-                    if (delState) {
-                        SLog.i(TAG, "正在删除" + p);
-                    } else {
-                        SLog.i(TAG, "删除" + p + "失败");
-                    }
-                }
-
-                needDel = null;
-                getLocalVideoList();
             }
 
             @Override
             public void onError(Throwable e) {
                 SLog.e(TAG, "视频文件下载错误" + e.getMessage());
-                if (needDownload != null && needDownload.size() > 0) {
-                    boolean delState = new File(videoPath + needDownload.get(0)).delete();
-                    if (delState) {
-                        SLog.e(TAG, "删除错误视频文件" + needDownload.get(0) + "成功");
-                    } else {
-                        SLog.e(TAG, "删除错误视频文件" + needDownload.get(0) + "失败");
-                    }
-                    getLocalVideoList();
-
-                }
+//                if (needDownload != null && needDownload.size() > 0) {
+//                    boolean delState = new File(videoPath + needDownload.get(0)).delete();
+//                    if (delState) {
+//                        SLog.e(TAG, "删除错误视频文件" + needDownload.get(0) + "成功");
+//                    } else {
+//                        SLog.e(TAG, "删除错误视频文件" + needDownload.get(0) + "失败");
+//                    }
+//                    getLocalVideoList();
+//                }
             }
 
             @Override
             public void onNext(final DownloadInfo downloadInfo) {
-                SLog.i(TAG, "正在保存" + needDownload.get(0));
-                DownloadUtlis.writeResponseBodyToDisk(downloadInfo.responseBody, videoPath,downloadInfo.fileName);
+                SLog.i(TAG, "正在保存" + downloadInfo.fileName);
+                DownloadUtlis.writeResponseBodyToDisk(downloadInfo.responseBody, videoPath, downloadInfo.fileName);
                 downloadInfo.responseBody.close();
-                needDownload = null;
                 getLocalVideoList();
                 if (!videoView.isPlaying()) {
                     runOnUiThread(new Runnable() {
@@ -253,11 +246,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private List<String> needDel = new ArrayList<>();//需要删除的文件+本地路径
-    private List<String> needDownload = new ArrayList<>();//需要下载的文件没有网络路径
-
     //筛选需要下载或删除的文件
-    private void compare(List<String> netList, List<String> localList) {
+    private List<String> compare(List<String> netList, List<String> localList) {
+        List<String> needDownload = new ArrayList<>();//需要下载的文件没有网络路径
+        List<String> needDel = new ArrayList<>();//需要删除的文件+本地路径
         if (needDownload == null) {
             needDownload = new ArrayList<>();
         }
@@ -288,6 +280,20 @@ public class MainActivity extends AppCompatActivity {
                 needDel.add(videoPath + s);
             }
         }
+
+        boolean delState;
+        for (String p : needDel) {
+            File f = new File(p);
+            delState = f.delete();
+            if (delState) {
+                SLog.i(TAG, "正在删除" + p);
+            } else {
+                SLog.i(TAG, "删除" + p + "失败");
+            }
+        }
+
+        getLocalVideoList();
+        return needDownload;
     }
 
     @Override

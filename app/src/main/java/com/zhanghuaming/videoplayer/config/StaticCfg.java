@@ -9,7 +9,7 @@ import android.os.Environment;
  */
 
 public class StaticCfg {
-    private static final String serviceIP ="http://"+ "192.168.1.104";//视频服务器ip或域名
+    private static final String serviceIP ="http://"+ "192.168.1.103";//视频服务器ip或域名
     private static final String servicePort = "8080";//视频服务器端口号
     public static final String baseUrl = serviceIP+":"+servicePort+"/gmsystem/";
     public static final String getURLBaseUrl = "video/findall.do";//服务器查看全部视频名

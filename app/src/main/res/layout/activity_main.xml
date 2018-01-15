@@ -7,34 +7,12 @@
     tools:context="com.zhanghuaming.videoplayer.context.MainActivity">
 
 
-    <LinearLayout
+    <com.zhanghuaming.videoplayer.view.FullVideoView
+        android:id="@+id/video_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal">
+        android:keepScreenOn="true" />
 
-        <com.zhanghuaming.videoplayer.view.FullVideoView
-            android:id="@+id/video_view"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="4"
-            android:keepScreenOn="true" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
-
-            <ImageView
-                android:layout_margin="5dp"
-                android:id="@+id/iv_erweima"
-                android:layout_width="match_parent"
-                android:layout_height="130dp"
-                android:scaleType="fitXY"
-                android:src="@drawable/abc_btn_check_material"/>
-
-        </LinearLayout>
-
-    </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
